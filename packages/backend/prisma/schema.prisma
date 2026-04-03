@@ -1,0 +1,258 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ===== Users (Customers) =====
+
+model User {
+  id            String   @id @default(cuid())
+  phone         String   @unique
+  name          String?
+  email         String?
+  city          String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  conversations Conversation[]
+  orders        Order[]
+}
+
+// ===== Agents (Employees) =====
+
+model Agent {
+  id                 String        @id @default(cuid())
+  name               String
+  phone              String        @unique
+  email              String        @unique
+  passwordHash       String
+  role               AgentRole     @default(AGENT)
+  isOnline           Boolean       @default(false)
+  maxConcurrentChats Int           @default(5)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  categories         AgentCategory[]
+  conversations      Conversation[]
+  messages           Message[]
+
+  @@index([isOnline, role])
+}
+
+model AgentCategory {
+  agentId    String
+  categoryId String
+
+  agent      Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([agentId, categoryId])
+}
+
+enum AgentRole {
+  ADMIN
+  AGENT
+}
+
+// ===== Products & Categories =====
+
+model Category {
+  id          String   @id @default(cuid())
+  sallaId     Int      @unique
+  name        String
+  imageUrl    String?
+  parentId    String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  parent      Category?       @relation("CategoryTree", fields: [parentId], references: [id])
+  children    Category[]      @relation("CategoryTree")
+  products    ProductCategory[]
+  agents      AgentCategory[]
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  sallaId     Int      @unique
+  name        String
+  description String   @default("")
+  price       Float
+  salePrice   Float?
+  imageUrl    String?
+  images      String[] // array of image URLs
+  quantity    Int      @default(0)
+  isActive    Boolean  @default(true)
+  hasCustomization Boolean @default(false)
+  customizationFields String[] // e.g. ["name", "image", "text"]
+  templates   ProductTemplate[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  categories  ProductCategory[]
+  orderItems  OrderItem[]
+
+  @@index([isActive])
+}
+
+model ProductCategory {
+  productId  String
+  categoryId String
+
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([productId, categoryId])
+}
+
+model ProductTemplate {
+  id         String  @id @default(cuid())
+  productId  String
+  name       String
+  imageUrl   String
+  isActive   Boolean @default(true)
+
+  product    Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+// ===== Conversations & Messages =====
+
+model Conversation {
+  id              String             @id @default(cuid())
+  userId          String
+  channel         ChannelType
+  status          ConversationStatus @default(ACTIVE)
+  flowState       String             @default("WELCOME")
+  assignedAgentId String?
+  lastCategoryId  String?
+  metadata        Json?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  closedAt        DateTime?
+
+  user            User               @relation(fields: [userId], references: [id])
+  assignedAgent   Agent?             @relation(fields: [assignedAgentId], references: [id])
+  messages        Message[]
+  orders          Order[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([assignedAgentId])
+}
+
+model Message {
+  id              String           @id @default(cuid())
+  conversationId  String
+  direction       MessageDirection
+  type            MessageType      @default(TEXT)
+  content         String
+  metadata        Json?
+  agentId         String?
+  createdAt       DateTime         @default(now())
+
+  conversation    Conversation     @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  agent           Agent?           @relation(fields: [agentId], references: [id])
+
+  @@index([conversationId, createdAt])
+}
+
+enum ChannelType {
+  WHATSAPP
+  WIDGET
+}
+
+enum ConversationStatus {
+  ACTIVE
+  WAITING_AGENT
+  WITH_AGENT
+  CLOSED
+}
+
+enum MessageDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  DOCUMENT
+  BUTTONS
+  LIST
+  PRODUCT_CARD
+  TEMPLATE
+}
+
+// ===== Orders =====
+
+model Order {
+  id              String        @id @default(cuid())
+  orderNumber     String        @unique
+  userId          String
+  conversationId  String?
+  sallaOrderId    Int?          @unique
+  status          OrderStatusEnum @default(PENDING)
+  paymentMethod   PaymentMethodEnum?
+  paymentReceiptUrl String?
+  subtotal        Float         @default(0)
+  total           Float         @default(0)
+  customerNote    String?
+  internalNote    String?
+  shippingTrackingUrl String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  user            User          @relation(fields: [userId], references: [id])
+  conversation    Conversation? @relation(fields: [conversationId], references: [id])
+  items           OrderItem[]
+
+  @@index([userId])
+  @@index([orderNumber])
+  @@index([status])
+}
+
+model OrderItem {
+  id              String  @id @default(cuid())
+  orderId         String
+  productId       String
+  quantity        Int     @default(1)
+  unitPrice       Float
+  totalPrice      Float
+  // Customization data
+  customName      String?
+  customImageUrl  String?
+  customText      String?
+  templateId      String?
+
+  order           Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product         Product @relation(fields: [productId], references: [id])
+}
+
+enum OrderStatusEnum {
+  PENDING
+  AWAITING_PAYMENT
+  PAYMENT_RECEIVED
+  IN_DESIGN
+  IN_PRODUCTION
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentMethodEnum {
+  BANK_TRANSFER
+  SALLA_CHECKOUT
+}
+
+// ===== Settings =====
+
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}

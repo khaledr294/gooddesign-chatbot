@@ -1,0 +1,22 @@
+{
+  "name": "gooddesign-chatbot",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Chatbot for Good Design - Advertising & Printing (gddsn.com)",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "db:generate": "pnpm --filter backend prisma:generate",
+    "db:migrate": "pnpm --filter backend prisma:migrate",
+    "db:push": "pnpm --filter backend prisma:push"
+  },
+  "devDependencies": {
+    "turbo": "^2.4.0",
+    "typescript": "^5.7.0"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20"
+  }
+}
