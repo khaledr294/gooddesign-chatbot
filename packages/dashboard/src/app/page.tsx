@@ -3,8 +3,20 @@
 import useSWR from 'swr';
 import { apiFetch } from '@/lib/api';
 
+interface StatsResponse {
+  period: number;
+  totalConversations: number;
+  totalOrders: number;
+  conversionRate: string;
+  activeConversations?: number;
+  conversationsByStatus: { status: string; _count: number }[];
+  ordersByStatus: { status: string; _count: number }[];
+  topProducts: { productId: string; productName: string; totalQuantity: number }[];
+  agentStats: { id: string; name: string; _count: { conversations: number; messages: number } }[];
+}
+
 export default function StatsPage() {
-  const { data: stats } = useSWR('/stats', apiFetch, { refreshInterval: 30000 });
+  const { data: stats } = useSWR<StatsResponse>('/stats', apiFetch, { refreshInterval: 30000 });
 
   const cards = [
     { label: 'إجمالي المحادثات', value: stats?.totalConversations ?? '—', color: 'blue' },

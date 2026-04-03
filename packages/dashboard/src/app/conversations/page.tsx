@@ -33,6 +33,15 @@ interface ConversationsResponse {
   limit: number;
 }
 
+interface ConversationDetail {
+  id: string;
+  status: string;
+  channel: string;
+  user: { id: string; name: string | null; phone: string };
+  assignedAgent: { id: string; name: string } | null;
+  messages: Message[];
+}
+
 const STATUS_LABELS: Record<string, string> = {
   ACTIVE: 'نشط',
   WAITING_AGENT: 'بانتظار موظف',
@@ -61,7 +70,7 @@ export default function ConversationsPage() {
   );
   const conversations: Conversation[] = convResponse?.data ?? [];
 
-  const { data: detail } = useSWR(
+  const { data: detail } = useSWR<ConversationDetail>(
     selected ? `/conversations/${selected}` : null,
     apiFetch
   );
