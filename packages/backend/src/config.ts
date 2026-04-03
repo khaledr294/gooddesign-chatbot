@@ -4,15 +4,15 @@ const envSchema = z.object({
   DATABASE_URL: z.string(),
   REDIS_URL: z.string().default('redis://localhost:6379'),
 
-  WHATSAPP_TOKEN: z.string(),
-  WHATSAPP_PHONE_NUMBER_ID: z.string(),
-  WHATSAPP_BUSINESS_ACCOUNT_ID: z.string(),
-  WHATSAPP_VERIFY_TOKEN: z.string(),
+  WHATSAPP_TOKEN: z.string().default(''),
+  WHATSAPP_PHONE_NUMBER_ID: z.string().default(''),
+  WHATSAPP_BUSINESS_ACCOUNT_ID: z.string().default(''),
+  WHATSAPP_VERIFY_TOKEN: z.string().default(''),
 
-  SALLA_CLIENT_ID: z.string(),
-  SALLA_CLIENT_SECRET: z.string(),
-  SALLA_ACCESS_TOKEN: z.string(),
-  SALLA_REFRESH_TOKEN: z.string(),
+  SALLA_CLIENT_ID: z.string().default(''),
+  SALLA_CLIENT_SECRET: z.string().default(''),
+  SALLA_ACCESS_TOKEN: z.string().default(''),
+  SALLA_REFRESH_TOKEN: z.string().default(''),
   SALLA_WEBHOOK_SECRET: z.string().default(''),
 
   S3_ENDPOINT: z.string().default(''),

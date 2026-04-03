@@ -38,8 +38,10 @@ async function main() {
   });
   setupSocketIO(io);
 
-  // Connect Redis
-  await redis.connect();
+  // Connect Redis (ioredis auto-connects on first command; only connect if not already)
+  if (redis.status === 'wait') {
+    await redis.connect();
+  }
 
   // Start periodic product sync from Salla
   startProductSync();
